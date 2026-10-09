@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="엔딩 도감">
+<meta name="theme-color" content="#fbf6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1219" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>포켓 프린세스 엔딩 도감</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: 왕실 도감 — 상단 필터 바 + 카드 그리드, 카드마다 왕관 별 난이도와 명성 계열 리본 */
+:root{
+  --bg:#fbf6f8; --surface:#ffffff; --ink:#2d1a2e; --muted:#7a6479; --line:#ead9e4;
+  --plum:#7b2d6b; --plum-soft:#f3e3ee; --gold:#c08a1e; --gold-soft:#fbf0d6;
+  --c-all:#7b2d6b; --c-mu:#b5442e; --c-sa:#c2527f; --c-ga:#3f7f5a; --c-ye:#3d64a8;
+  --done:#3f7f5a;
+  --f-display:"Do Hyeon","IBM Plex Sans KR",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans KR","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1a1219; --surface:#251a24; --ink:#f3e8f0; --muted:#b39fb0; --line:#3a2b38;
+  --plum:#e09ad0; --plum-soft:#3a2336; --gold:#e8b94e; --gold-soft:#3a2f1a;
+  --c-all:#d993c9; --c-mu:#ec8a74; --c-sa:#ee93b6; --c-ga:#86c79f; --c-ye:#8fb1ea; --done:#86c79f;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1a1219; --surface:#251a24; --ink:#f3e8f0; --muted:#b39fb0; --line:#3a2b38;
+  --plum:#e09ad0; --plum-soft:#3a2336; --gold:#e8b94e; --gold-soft:#3a2f1a;
+  --c-all:#d993c9; --c-mu:#ec8a74; --c-sa:#ee93b6; --c-ga:#86c79f; --c-ye:#8fb1ea; --done:#86c79f;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:28px 60px}
+header h1{font-family:var(--f-display);font-weight:400;font-size:clamp(30px,6vw,46px);margin:0;color:var(--plum);text-wrap:balance;letter-spacing:.01em}
+header p{margin:6px 0 0;color:var(--muted);max-width:62ch}
+.progress{display:flex;align-items:center;gap:12px;margin-top:18px;flex-wrap:wrap}
+.bar{flex:1 1 220px;height:10px;border-radius:99px;background:var(--plum-soft);overflow:hidden;max-width:420px}
+.bar i{display:block;height:100%;background:var(--gold);width:0;transition:width .3s}
+.progress b{font-variant-numeric:tabular-nums}
+
+.controls{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:14px;margin-top:18px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:12px;color:var(--muted);letter-spacing:.06em;min-width:52px}
+input[type=search]{flex:1 1 240px;min-width:0;font:inherit;padding:10px 14px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+input[type=search]:focus-visible{outline:2px solid var(--plum);outline-offset:1px}
+select{font:inherit;padding:9px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+.chip{font:inherit;font-size:13.5px;padding:6px 12px;border-radius:99px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.chip[aria-pressed=true]{background:var(--plum);border-color:var(--plum);color:var(--bg)}
+.chip:focus-visible,.card button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.count{font-size:13px;color:var(--muted)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 16px 14px;display:flex;flex-direction:column;gap:10px;min-width:0;position:relative}
+.card.done{border-color:var(--done)}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.no{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.name{font-family:var(--f-display);font-size:24px;line-height:1.15;margin:0}
+.grade{display:inline-block;font-family:var(--f-display);font-size:15px;min-width:28px;text-align:center;padding:1px 7px;border-radius:7px;background:var(--gold-soft);color:var(--gold);margin-left:6px;vertical-align:3px}
+.stars{color:var(--gold);letter-spacing:1px;font-size:14px;white-space:nowrap}
+.stars s{color:var(--line);text-decoration:none}
+.fame{font-size:12.5px;font-weight:700;padding:3px 9px;border-radius:6px;border:1.5px solid currentColor;white-space:nowrap;align-self:flex-start}
+dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:0;font-size:13.5px}
+dt{color:var(--muted)}
+dd{margin:0;min-width:0}
+dd.hl{color:var(--plum);font-weight:700}
+.cond{background:var(--plum-soft);border-radius:10px;padding:10px 12px}
+.cond h3{margin:0 0 4px;font-size:12px;color:var(--muted);font-weight:500;letter-spacing:.06em}
+.cond ul{margin:0;padding-left:18px;font-size:14px}
+.cond li.ruby{color:var(--c-mu)}
+.note{font-size:12.5px;color:var(--muted);border-left:3px solid var(--gold);padding-left:8px}
+.card button{font:inherit;font-size:13px;align-self:flex-start;padding:6px 12px;border-radius:8px;border:1.5px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+.card.done button{border-color:var(--done);color:var(--done);font-weight:700}
+.empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:40px 0}
+
+.rules{margin-top:36px;border-top:1px solid var(--line);padding-top:20px;max-width:72ch}
+.rules h2{font-family:var(--f-display);font-weight:400;font-size:24px;margin:0 0 8px;color:var(--plum)}
+.rules li{margin-bottom:6px}
+.rules a{color:var(--plum)}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;-webkit-text-size-adjust:100%}input[type=search],select{font-size:16px}</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>포켓 프린세스 엔딩 도감</h1>
+    <p>직업 엔딩 71개의 난이도, 딸의 생일, 시작 나이, 재능, 성격, 엔딩 조건을 한곳에 모았어요. 본 엔딩은 "봤어요"를 눌러 표시해 두세요.</p>
+    <div class="progress"><div class="bar"><i id="pbar"></i></div><span>본 엔딩 <b id="pnum">0</b> / 71</span></div>
+  </header>
+
+  <div class="controls">
+    <div class="row">
+      <input type="search" id="q" placeholder="직업 이름이나 능력치로 검색 (예: 화술, 루비, 알바)" aria-label="검색">
+      <select id="sort" aria-label="정렬">
+        <option value="star">난이도 낮은 순</option>
+        <option value="star-d">난이도 높은 순</option>
+        <option value="ruby">루비 적은 순</option>
+        <option value="name">이름 순</option>
+      </select>
+    </div>
+    <div class="row" id="starRow"><span class="lab">난이도</span></div>
+    <div class="row" id="fameRow"><span class="lab">명성 계열</span></div>
+    <div class="row" id="moreRow"><span class="lab">보기</span></div>
+    <div class="count" id="count"></div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <section class="rules">
+    <h2>모든 엔딩에 공통으로 적용되는 규칙</h2>
+    <ul>
+      <li>조건이 여러 엔딩에 동시에 맞으면 <b>더 높은 엔딩이 먼저</b> 나와요. 낮은 엔딩을 노릴 때는 능력치를 너무 올리지 마세요.</li>
+      <li>프리터 엔딩은 노리는 알바만 10회 이상 하고, 나머지 알바는 모두 10회 미만으로 맞춰야 해요. 10회 넘긴 알바가 둘 이상이면 가장 많이 한 알바의 엔딩이 나와요.</li>
+      <li>명성끼리 50 이상 벌어지면 '종합'이 아니라 가장 높은 계열(무예·사교·가사·예술)의 엔딩으로 바뀌어요.</li>
+      <li>"루비"는 게임 안 아이템 <b>고귀한 루비</b>예요. 적힌 개수만큼 써야 엔딩이 열려요.</li>
+    </ul>
+    <p class="count">출처: <a href="https://blog.naver.com/llll315llll" target="_blank" rel="noopener">blog.naver.com/llll315llll</a> 포켓 프린세스 엔딩 공략 카테고리(71편). 내용은 원문 그대로이고, 원문에서 오타로 보이는 부분은 카드에 따로 적어 두었어요.</p>
+  </section>
+</div>
+
+<script>
+// [번호, 직업, 평가, 난이도, 생일, 나이, 시작등급, 재능, 성격, 명성계열, 명성등급, [조건...], 루비, 메모]
+const T={a:"모든 일에 능숙",h:"건강하고 튼튼하게",s:"활발하고 사교적",g:"감각과 손재주가 좋다"};
+const P={A:"집중력이 좋은 A 타입",B:"호기심이 많은 B 타입"};
+const RAW=[
+[1,"술집 프리터","D",1,"5월 1일",15,"종합 D","a","A","종합","D 이상",["주점 알바 10회 이상"],0],
+[2,"레스토랑 프리터","D",1,"5월 1일",15,"종합 D","a","A","종합","D 이상",["레스토랑 알바 10회 이상"],0],
+[3,"과외 프리터","D",1,"5월 1일",15,"종합 D","a","A","종합","D 이상",["가정 교사 알바 10회 이상"],0],
+[4,"동물 농장 프리터","D",1,"5월 1일",15,"종합 D","a","A","종합","D 이상",["돌보기 알바 10회 이상"],0],
+[5,"농장 프리터","D",1,"1월 1일",15,"종합 D","a","A","종합","D 이상",["농장 알바 10회 이상"],0],
+[6,"하녀","D",1,"5월 1일",15,"종합 D","a","A","종합","D 이상",["집안일 알바 10회 이상"],0],
+[7,"백수","D",1,"7월 1일",15,"종합 D","a","A","무예","D 이상",["도덕심 50 미만"],0],
+[8,"술집 종업원","D",1,"5월 1일",15,"종합 D","a","A","가사","D 이상",["체력 70 이상"],0],
+[9,"사기꾼","D",1,"2월 1일",15,"종합 D","a","A","사교","D 이상",["화술 70 이상","도덕심 30 미만","체력 200 미만"],0],
+[10,"고급 접대부","D",1,"7월 1일",15,"종합 D","a","A","예술","D 이상",["매력 100 이상","도덕심 30 미만"],17],
+[11,"이혼녀","D",1,"1월 1일",15,"종합 D","a","A","사교","D 이상",["매력 150 미만"],0],
+[12,"지주의 애인","D",1,"7월 1일",15,"종합 D","a","A","사교","D 이상",["매력 150 이상"],11],
+[13,"사채업자","D",2,"1월 1일",15,"종합 D","a","A","무예","D 이상",["근력 150 이상"],0,"평가는 D인데 난이도는 ★★로 적혀 있어요."],
+[14,"막노동꾼","D",2,"1월 1일",15,"종합 D","a","A","무예","D 이상",["전투 기술 100 이상"],0,"평가는 D인데 난이도는 ★★로 적혀 있어요."],
+[15,"고시생","C",2,"2월 1일",15,"종합 D","a","A","종합","C 이상",["지능 700 이상","체력 700 이상"],0],
+[16,"프로 게이머","C",2,"12월 1일",15,"종합 D","a","A","종합","C 이상",["감수성 300 이상","지능 150 이상 ~ 250 미만"],31],
+[17,"수녀","C",2,"5월 1일",15,"종합 D","a","A","가사","C 이상",["도덕심 300 이상","가사 300 미만"],0],
+[18,"신부 수업","C",2,"5월 1일",15,"종합 D","a","A","가사","C 이상",["가사 300 이상"],0],
+[19,"술집 사장","",2,"5월 1일",15,"종합 D","a","A","종합","C 이상",["주점 알바 30회 이상"],5,"원문에 평가 등급이 적혀 있지 않아요."],
+[20,"요리사","C",2,"5월 1일",15,"종합 D","a","A","종합","C 이상",["레스토랑 알바 30회 이상"],5],
+[21,"선생님","C",2,"5월 1일",15,"종합 D","a","A","종합","C 이상",["가정 교사 알바 30회 이상"],5],
+[22,"동물 농장주","C",2,"5월 1일",15,"종합 D","a","A","종합","C 이상",["돌보기 알바 30회 이상"],5],
+[23,"농부","C",2,"5월 1일",15,"종합 D","a","A","종합","C 이상",["농장 알바 30회 이상","지능 150 미만"],5],
+[24,"의상 디자이너","C",2,"5월 1일",15,"종합 D","a","A","종합","C 이상",["집안일 알바 30회 이상"],5],
+[25,"신흥 종교 교주","",2,"7월 1일",15,"종합 D","a","A","무예","C 이상",["도덕심 0"],17,"원문에 평가 등급이 적혀 있지 않아요."],
+[26,"불량배","C",2,"5월 1일",15,"종합 D","a","A","무예","C 이상",["도덕심 0 이상 ~ 30 미만","기품 200 미만"],0],
+[27,"암흑가의 보스","C",2,"1월 1일",15,"종합 D","a","A","무예","C 이상",["지능 100 이상","근력 100 이상","도덕심 0 ~ 30 미만"],17],
+[28,"쇼걸","C",2,"7월 1일",15,"종합 D","a","A","예술","C 이상",["매력 300 이상","도덕심 30 미만"],17],
+[29,"농부의 부인","C",2,"5월 1일",15,"종합 D","a","A","사교","C 이상",["체력 200 이상","가사 100 이상"],0],
+[30,"비서","C",2,"5월 1일",15,"종합 D","a","A","사교","C 이상",["지능 200 이상","화술 100 이상"],0],
+[31,"동인녀","C",2,"5월 1일",15,"종합 D","a","A","예술","C 이상",["매력 200 이상","예술 100 이상"],17],
+[32,"게임 회사 직원","C",2,"5월 1일",14,"종합 D","a","A","예술","C 이상",["지능 300 이상","화술 80 미만"],17],
+[33,"바텐더","B",3,"5월 1일",15,"종합 D","a","A","사교","B 이상",["화술 200 이상","매력 200 이상"],0],
+[34,"점술가","B",3,"5월 1일",15,"종합 D","a","A","사교","B 이상",["화술 300 이상","감수성 300 이상"],0],
+[35,"집사","B",3,"5월 1일",14,"종합 D","a","A","가사","B 이상",["가사 400 이상","체력 300 이상","성품 300 이상"],31],
+[36,"해적","B",3,"5월 1일",15,"종합 D","a","A","무예","B 이상",["전투 기술 300 이상","도덕심 200 미만"],17],
+[37,"경찰","B",3,"5월 1일",15,"종합 D","a","A","무예","B 이상",["전투 기술 300 이상","도덕심 201 이상"],17],
+[38,"재벌 부인","B",3,"11월 1일",15,"종합 D","a","A","사교","B 이상",["매력 300 이상","기품 100 이상 ~ 200 미만"],11],
+[39,"백작 부인","B",3,"5월 1일",16,"종합 D","a","A","사교","B 이상",["기품 200 이상","매력 200 이상"],11],
+[40,"영화 감독","B",3,"5월 1일",15,"종합 D","a","A","예술","B 이상",["화술 300 이상"],11],
+[41,"간호사","C",3,"5월 1일",15,"종합 D","a","A","종합","C 이상",["지능 150 이상 ~ 250 미만"],0,"평가는 C인데 난이도는 ★★★로 적혀 있어요."],
+[42,"의사","B",3,"5월 1일",14,"종합 D","a","A","종합","B 이상",["지능 300 이상","화술 150 미만","도덕심 300 미만"],11],
+[43,"재판관","B",3,"5월 1일",15,"종합 D","a","A","종합","B 이상",["도덕심 300 이상","화술 150 미만"],11],
+[44,"교수","B",3,"5월 1일",15,"종합 D","a","A","종합","B 이상",["화술 150 이상"],11],
+[45,"퇴마사","A",4,"1월 1일",14,"무예 D","h","A","무예","A 이상",["지능 600 이상","화술 600 이상"],0],
+[46,"탐정","A",4,"5월 1일",13,"종합 D","a","A","종합","A 이상",["매력 600 이상","화술 600 이상"],0],
+[47,"병아리 감별사","A",4,"1월 1일",15,"종합 D","a","A","가사","A",["근력 400 이상","도덕심 700 이상"],0,"원문에는 \"가사 A타입\"이라고 적혀 있어요. \"가사 A 이상\"의 오타로 보여요."],
+[48,"미스 포켓 프린세스","A",4,"5월 1일",13,"종합 D","a","A","종합","A 이상",["예의 범절 500 이상","기품 400 이상","더러운 펜던트 이벤트 3회 이상"],17],
+[49,"정치가","A",4,"5월 1일",13,"종합 D","a","A","종합","A 이상",["화술 500 이상","도덕심 300 미만","귀족의 연금 문서 이벤트 3회 이상"],17],
+[50,"파일럿","A",4,"5월 1일",13,"종합 D","a","A","종합","A 이상",["감수성 600 이상","지능 600 미만"],31],
+[51,"암살자","A",4,"7월 1일",15,"종합 D","h","A","무예","A 이상",["전투 기술 600 이상","체력 200 미만","도덕심 30 미만"],17],
+[52,"무예 사범","B",4,"5월 1일",14,"종합 D","h","A","무예","B 이상",["전투 기술 500 이상","성품 200 이상"],11,"평가는 B인데 난이도는 ★★★★로 적혀 있어요."],
+[53,"근위 대장","A",4,"5월 1일",14,"종합 D","h","A","무예","A 이상",["체력 600 이상","도덕심 300 이상"],11],
+[54,"무용가","A",4,"5월 1일",14,"사교 D","s","A","사교","A 이상",["매력 700 이상"],17],
+[55,"화가","A",4,"5월 1일",14,"종합 D","g","B","예술","A 이상",["예술 700 이상"],0],
+[56,"외교관","A",4,"5월 1일",14,"종합 D","a","A","종합","A 이상",["화술 300 이상","지능 600 미만"],11],
+[57,"과학자","A",4,"5월 1일",14,"종합 D","g","A","종합","A 이상",["지능 600 이상"],11],
+[58,"성기사","S",5,"1월 1일",13,"종합 D","h","A","종합","S",["체력 999 이상","근력 999 이상","전투 기술 999 이상","로글리안 시리즈 풀 세트 소유"],0],
+[59,"발명가","S",5,"5월 1일",13,"종합 D","h","A","예술","S",["지능 999 이상","감수성 700 이상","화술 700 미만"],17],
+[60,"머플러 라이더","S",5,"1월 1일",13,"종합 D","h","A","무예","S",["전투 기술 999 이상","도덕심 500 이상","기품 500 이상"],31],
+[61,"교황","S",5,"1월 1일",13,"종합 D","h","A","종합","S",["도덕심 999","지능 600 이상","기품 500 이상"],0],
+[62,"운동 선수","S",5,"1월 1일",13,"종합 D","h","A","무예","S 이상",["체력 999 이상","근력 500 이상","전투 기술 700 미만"],17],
+[63,"마법 소녀","S",5,"7월 1일",13,"종합 D","h","A","무예","S 이상",["지능 700 이상","매력 700 이상"],31],
+[64,"레이싱 걸","S",5,"5월 1일",13,"종합 D","s","A","사교","S 이상",["매력 999 이상","감수성 600 이상","뽕뽕환 이벤트 4회 이상"],31],
+[65,"장군","S",5,"5월 3일",13,"종합 D","h","A","무예","S",["전투 기술 700 이상","지능 700 이상"],17,"다른 직업은 생일이 모두 1일인데 장군만 5월 3일이에요. 오타일 수도 있어요."],
+[66,"용사","S",5,"5월 1일",14,"무예 D","h","A","무예","S",["전투 기술 700 이상","체력 500 이상 ~ 999 미만"],17],
+[67,"연예인","S",5,"5월 1일",14,"사교 D","s","A","사교","A 이상",["매력 700 이상","화술 700 이상"],31],
+[68,"왕비","S",5,"5월 1일",14,"사교 D","s","A","사교","S",["매력 700 이상","성품 700 이상"],31],
+[69,"소설가","S",5,"5월 1일",14,"예술 D","g","A","예술","S",["지능 700 이상","화술 700 이상"],17],
+[70,"재상","S",5,"5월 1일",14,"종합 D","a","A","종합","S",["기품 400 이상","도덕심 300 이상","단, 기품 400~500 미만 또는 도덕심 300~400 미만"],17],
+[71,"여왕","S",5,"5월 1일",14,"종합 D","a","A","종합","S",["기품 500 이상","도덕심 400 이상"],31]
+];
+const DATA=RAW.map(r=>({no:r[0],name:r[1],grade:r[2],star:r[3],bday:r[4],age:r[5],start:r[6],talent:r[7],pers:r[8],fame:r[9],rank:r[10],conds:r[11],ruby:r[12],note:r[13]||""}));
+const FAME_COLOR={"종합":"--c-all","무예":"--c-mu","사교":"--c-sa","가사":"--c-ga","예술":"--c-ye"};
+
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let done=new Set(store.get("pp-done",[]));
+const state={q:"",star:0,fame:"",only:"",sort:"star"};
+
+function chip(row,label,key,val){
+  const b=document.createElement("button");b.className="chip";b.textContent=label;b.type="button";
+  b.dataset.key=key;b.dataset.val=val;b.setAttribute("aria-pressed",String(state[key]===val));
+  b.onclick=()=>{state[key]=val;document.querySelectorAll(`.chip[data-key="${key}"]`).forEach(c=>c.setAttribute("aria-pressed",String(c===b)));render()};
+  document.getElementById(row).appendChild(b);
+}
+chip("starRow","전체","star",0);
+for(let s=1;s<=5;s++)chip("starRow","★".repeat(s),"star",s);
+chip("fameRow","전체","fame","");
+["종합","무예","사교","가사","예술"].forEach(f=>chip("fameRow",f,"fame",f));
+chip("moreRow","전부","only","");
+chip("moreRow","안 본 엔딩","only","todo");
+chip("moreRow","본 엔딩","only","done");
+chip("moreRow","루비 필요 없음","only","noruby");
+chip("moreRow","특별 재능·성격","only","special");
+
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function stars(n){return "★".repeat(n)+"<s>"+"★".repeat(5-n)+"</s>"}
+
+function render(){
+  const q=state.q.trim().replace(/\s+/g,"");
+  let list=DATA.filter(d=>{
+    if(state.star&&d.star!==state.star)return false;
+    if(state.fame&&d.fame!==state.fame)return false;
+    if(state.only==="todo"&&done.has(d.no))return false;
+    if(state.only==="done"&&!done.has(d.no))return false;
+    if(state.only==="noruby"&&d.ruby)return false;
+    if(state.only==="special"&&d.talent==="a"&&d.pers==="A")return false;
+    if(q){const hay=[d.name,d.grade,d.bday,d.fame,d.rank,T[d.talent],P[d.pers],...d.conds,d.ruby?"루비":"",d.note].join(" ").replace(/\s+/g,"");if(!hay.includes(q))return false}
+    return true});
+  const by={star:(a,b)=>a.star-b.star||a.no-b.no,"star-d":(a,b)=>b.star-a.star||b.no-a.no,ruby:(a,b)=>a.ruby-b.ruby||a.star-b.star,name:(a,b)=>a.name.localeCompare(b.name,"ko")};
+  list.sort(by[state.sort]);
+  document.getElementById("count").textContent=`${list.length}개 직업`;
+  const g=document.getElementById("grid");
+  if(!list.length){g.innerHTML='<div class="empty">조건에 맞는 직업이 없어요. 검색어나 필터를 바꿔 보세요.</div>';return}
+  g.innerHTML=list.map(d=>{
+    const isDone=done.has(d.no);
+    const c=`var(${FAME_COLOR[d.fame]})`;
+    const conds=[`${d.fame} 명성 ${d.rank}`,...d.conds].map(x=>`<li>${esc(x)}</li>`).join("")+(d.ruby?`<li class="ruby">고귀한 루비 ${d.ruby}개 소모</li>`:"");
+    return `<article class="card${isDone?" done":""}">
+      <div class="top"><div><div class="no">No.${String(d.no).padStart(2,"0")} · <span class="stars" aria-label="난이도 ${d.star}">${stars(d.star)}</span></div>
+      <h2 class="name">${esc(d.name)}${d.grade?`<span class="grade" title="평가">${d.grade}</span>`:""}</h2></div>
+      <span class="fame" style="color:${c}">${d.fame}</span></div>
+      <dl>
+        <dt>생일</dt><dd${d.bday!=="5월 1일"?' class="hl"':""}>${d.bday}</dd>
+        <dt>나이</dt><dd${d.age!==15?' class="hl"':""}>${d.age}살부터 <span style="color:var(--muted)">(${d.start}로 시작)</span></dd>
+        <dt>재능</dt><dd${d.talent!=="a"?' class="hl"':""}>${T[d.talent]}</dd>
+        <dt>성격</dt><dd${d.pers!=="A"?' class="hl"':""}>${P[d.pers]}</dd>
+      </dl>
+      <div class="cond"><h3>엔딩 조건</h3><ul>${conds}</ul></div>
+      ${d.note?`<div class="note">${esc(d.note)}</div>`:""}
+      <button type="button" data-no="${d.no}" aria-pressed="${isDone}">${isDone?"✓ 봤어요":"봤어요 표시"}</button>
+    </article>`}).join("");
+  const n=done.size;document.getElementById("pnum").textContent=n;document.getElementById("pbar").style.width=(n/71*100)+"%";
+}
+document.getElementById("grid").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-no]");if(!b)return;
+  const no=+b.dataset.no;done.has(no)?done.delete(no):done.add(no);store.set("pp-done",[...done]);render()});
+document.getElementById("q").addEventListener("input",e=>{state.q=e.target.value;render()});
+document.getElementById("sort").addEventListener("change",e=>{state.sort=e.target.value;render()});
+render();
+</script>
+<script>if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
+</body>
+</html>
