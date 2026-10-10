@@ -327,7 +327,7 @@ function showWarn(d){
 
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let done=new Set(store.get("pp-done",[]));
-const state={q:"",star:0,fame:"",only:"",sort:"star"};
+const state={q:"",star:0,fame:"",only:new Set(),sort:"star"};
 
 function chip(row,label,key,val){
   const b=document.createElement("button");b.className="chip";b.textContent=label;b.type="button";
@@ -340,11 +340,14 @@ chip("starRow","전체","star",0);
 for(let s=1;s<=5;s++)chip("starRow","★".repeat(s),"star",s).classList.add("star");
 chip("fameRow","전체","fame","");
 ["종합","무예","사교","가사","예술"].forEach(f=>chip("fameRow",f,"fame",f));
-chip("moreRow","전부","only","");
-chip("moreRow","미달성","only","todo");
-chip("moreRow","달성","only","done");
-chip("moreRow","루비X","only","noruby");
-chip("moreRow","특별 재능·성격","only","special");
+// 보기: '전부' 말고는 여러 개를 같이 고를 수 있음. 다 끄면 '전부'로 돌아감.
+function syncOnly(){document.querySelectorAll('.chip[data-key="only"]').forEach(c=>c.setAttribute("aria-pressed",String(c.dataset.val?state.only.has(c.dataset.val):!state.only.size)))}
+[["전부",""],["미달성","todo"],["달성","done"],["루비X","noruby"],["특별 재능·성격","special"]].forEach(([label,val])=>{
+  const b=document.createElement("button");b.className="chip";b.textContent=label;b.type="button";b.dataset.key="only";b.dataset.val=val;
+  b.onclick=()=>{if(!val)state.only.clear();else if(state.only.has(val))state.only.delete(val);else state.only.add(val);syncOnly();render()};
+  document.getElementById("moreRow").appendChild(b);
+});
+syncOnly();
 
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function stars(n){return "★".repeat(n)+"<s>"+"★".repeat(5-n)+"</s>"}
@@ -354,10 +357,10 @@ function render(){
   let list=DATA.filter(d=>{
     if(state.star&&d.star!==state.star)return false;
     if(state.fame&&d.fame!==state.fame)return false;
-    if(state.only==="todo"&&done.has(d.no))return false;
-    if(state.only==="done"&&!done.has(d.no))return false;
-    if(state.only==="noruby"&&d.ruby)return false;
-    if(state.only==="special"&&d.talent==="a"&&d.pers==="A")return false;
+    const o=state.only;
+    if(o.has("todo")!==o.has("done")&&o.has("done")!==done.has(d.no))return false; // 미달성·달성을 둘 다 고르면 둘 다 보여 줌
+    if(o.has("noruby")&&d.ruby)return false;
+    if(o.has("special")&&d.talent==="a"&&d.pers==="A")return false;
     if(q){const hay=[d.name,d.grade,d.bday,d.fame,d.rank,T[d.talent],P[d.pers],...d.conds,d.ruby?"루비":"",d.note].join(" ").replace(/\s+/g,"");if(!hay.includes(q))return false}
     return true});
   const by={star:(a,b)=>a.star-b.star||a.no-b.no,"star-d":(a,b)=>b.star-a.star||b.no-a.no,ruby:(a,b)=>a.ruby-b.ruby||a.star-b.star,name:(a,b)=>a.name.localeCompare(b.name,"ko")};
