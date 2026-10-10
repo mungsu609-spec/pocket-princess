@@ -78,7 +78,26 @@ dt{color:var(--muted)}
 dd{margin:0;min-width:0}
 dd.hl{color:var(--plum);font-weight:700}
 .cond{background:var(--plum-soft);border-radius:10px;padding:10px 12px}
-.cond h3{margin:0 0 4px;font-size:12px;color:var(--muted);font-weight:500;letter-spacing:.06em}
+.cond h3{margin:0 0 4px;font-size:12px;color:var(--muted);font-weight:500;letter-spacing:.06em;display:flex;align-items:center;justify-content:space-between;gap:8px}
+/* 주의할 엔딩 (!) 버튼과 창 */
+.card .warn{flex:none;width:30px;height:30px;padding:0;border-radius:50%;border:1.5px solid var(--c-mu);background:var(--surface);color:var(--c-mu);font-family:var(--f-display);font-size:17px;line-height:1;font-weight:400;display:grid;place-items:center}
+dialog{width:calc(100% - 32px);max-width:520px;max-height:82vh;padding:0;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgba(20,8,18,.5)}
+.dlg{padding:16px 16px 18px}
+.dlg-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.dlg-head h2{font-family:var(--f-display);font-weight:400;font-size:21px;line-height:1.25;margin:0;color:var(--plum)}
+.dlg-head small{display:block;font-family:var(--f-body);font-size:13px;color:var(--muted);margin-top:2px}
+.dlg-head button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.dlg-head button{flex:none;font:inherit;font-size:16px;width:34px;height:34px;border-radius:50%;border:1.5px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+.dlg-tip{font-size:13px;color:var(--muted);margin:8px 0 12px}
+.dlg-tip .same-ex{opacity:.55}
+.witem{border-top:1px solid var(--line);padding:10px 0}
+.witem .wtop{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.witem b{font-family:var(--f-display);font-weight:400;font-size:18px}
+.witem .fame{font-size:11.5px;padding:1px 7px}
+.witem ul{margin:4px 0 0;padding-left:18px;font-size:14px}
+.witem li.same{opacity:.55}
+.witem li.ruby{color:var(--c-mu)}
 .cond ul{margin:0;padding-left:18px;font-size:14px}
 .cond li.ruby{color:var(--c-mu)}
 .note{font-size:12.5px;color:var(--muted);border-left:3px solid var(--gold);padding-left:8px}
@@ -132,6 +151,12 @@ dd.hl{color:var(--plum);font-weight:700}
     <p class="count">출처: <a href="https://blog.naver.com/llll315llll" target="_blank" rel="noopener">blog.naver.com/llll315llll</a> 포켓 프린세스 엔딩 공략 카테고리(71편). 내용은 원문 그대로이고, 원문에서 오타로 보이는 부분은 카드에 따로 적어 두었어요.</p>
   </section>
 </div>
+
+<dialog id="warnDlg" aria-labelledby="wTitle"><div class="dlg">
+  <div class="dlg-head"><h2 id="wTitle"></h2><button type="button" id="wClose" aria-label="닫기">✕</button></div>
+  <p class="dlg-tip">이 엔딩 조건과 <b>동시에 맞을 수 있는</b>, 난이도가 더 높은 엔딩이에요. 아래 조건 중 <b>하나만 안 맞춰도</b> 피할 수 있어요. <span class="same-ex">흐린 글씨</span>는 노리는 엔딩 조건을 맞추면 저절로 같이 맞는 조건이라 피할 수 없어요.</p>
+  <div id="wList"></div>
+</div></dialog>
 
 <script>
 // [번호, 직업, 평가, 난이도, 생일, 나이, 시작등급, 재능, 성격, 명성계열, 명성등급, [조건...], 루비, 메모]
@@ -213,6 +238,45 @@ const RAW=[
 const DATA=RAW.map(r=>({no:r[0],name:r[1],grade:r[2],star:r[3],bday:r[4],age:r[5],start:r[6],talent:r[7],pers:r[8],fame:r[9],rank:r[10],conds:r[11],ruby:r[12],note:r[13]||""}));
 const FAME_COLOR={"종합":"--c-all","무예":"--c-mu","사교":"--c-sa","가사":"--c-ga","예술":"--c-ye"};
 
+// 주의할 엔딩: 조건이 동시에 맞을 수 있고 난이도(★)가 더 높은 엔딩.
+// 조건 하나 = {항목:[이상, 미만]}, 엔딩 하나 = 그런 묶음 여러 개 중 하나만 맞으면 됨(재상의 "또는").
+const RANKS=["D","C","B","A","S"],FAMES=["종합","무예","사교","가사","예술"],ALBA=["주점","레스토랑","가정 교사","돌보기","농장","집안일"],INF=1e9;
+function parseCond(s){
+  let m;
+  if(s.startsWith("단,"))return s.slice(2).trim().split(" 또는 ").flatMap(p=>parseCond(p.replace("~"," ~ ")));
+  if(m=s.match(/^(.+?) (\d+)(?: 이상)? ~ (\d+) 미만$/))return [{[m[1]]:[+m[2],+m[3]]}];
+  if(m=s.match(/^(.+?) (\d+)회? 이상$/))return [{[m[1]]:[+m[2],INF]}];
+  if(m=s.match(/^(.+?) (\d+) 미만$/))return [{[m[1]]:[0,+m[2]]}];
+  if(m=s.match(/^(.+?) (\d+)$/))return [{[m[1]]:[+m[2],+m[2]+1]}];
+  return [{[s]:[1,INF]}]; // 아이템 소유
+}
+const fameCond=d=>{const f=FAMES.indexOf(d.fame);return [{"명성 계열":[f,f+1],"명성 등급":[RANKS.indexOf(d.rank[0]),INF]}]};
+function and(a,b){const r={...a};for(const k in b){const p=r[k]||[0,INF],q=b[k];r[k]=[Math.max(p[0],q[0]),Math.min(p[1],q[1])]}return r}
+const possible=a=>Object.values(a).every(([l,h])=>l<h);
+const andAll=(xs,ys)=>xs.flatMap(x=>ys.map(y=>and(x,y))).filter(possible);
+function reqOf(d){
+  let alts=fameCond(d);
+  d.conds.forEach(s=>alts=andAll(alts,parseCond(s)));
+  // 프리터: 노리는 알바 말고 나머지 알바는 10회 미만
+  const f=d.conds.find(s=>/알바 10회 이상$/.test(s));
+  if(f)ALBA.map(a=>a+" 알바").filter(k=>!f.startsWith(k)).forEach(k=>alts=andAll(alts,[{[k]:[0,10]}]));
+  return alts;
+}
+// 노리는 엔딩(ys) 조건을 맞추면 이 조건(cs)도 저절로 맞는지
+const implied=(ys,cs)=>ys.every(y=>cs.some(c=>Object.entries(c).every(([k,[l,h]])=>{const [yl,yh]=y[k]||[0,INF];return yl>=l&&yh<=h})));
+DATA.forEach(d=>d.req=reqOf(d));
+DATA.forEach(d=>d.warn=DATA.filter(x=>x.star>d.star&&andAll(d.req,x.req).length).sort((a,b)=>a.star-b.star||a.no-b.no));
+
+function showWarn(d){
+  document.getElementById("wTitle").innerHTML=`${esc(d.name)}<small>노릴 때 주의할 엔딩 ${d.warn.length}개</small>`;
+  document.getElementById("wList").innerHTML=d.warn.map(x=>{
+    const rows=[[`${x.fame} 명성 ${x.rank}`,fameCond(x)],...x.conds.map(s=>[s,parseCond(s)])].map(([s,cs])=>[s,implied(d.req,cs)]);
+    const li=rows.map(([s,same])=>`<li${same?' class="same"':""}>${esc(s)}</li>`).join("")+(x.ruby?`<li class="ruby">고귀한 루비 ${x.ruby}개 소모</li>`:"");
+    const always=rows.every(r=>r[1])?`<p class="note">${esc(d.name)} 조건을 맞추면 이 엔딩 조건도 전부 같이 맞아요${x.ruby?" (루비만 빼고)":""}.</p>`:"";
+    return `<div class="witem"><div class="wtop"><b>${esc(x.name)}</b><span class="stars" aria-label="난이도 ${x.star}">${stars(x.star)}</span><span class="fame" style="color:var(${FAME_COLOR[x.fame]})">${x.fame}</span></div><ul>${li}</ul>${always}</div>`}).join("");
+  const dlg=document.getElementById("warnDlg");dlg.showModal();dlg.scrollTop=0;
+}
+
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let done=new Set(store.get("pp-done",[]));
 const state={q:"",star:0,fame:"",only:"",sort:"star"};
@@ -267,13 +331,17 @@ function render(){
         <dt>재능</dt><dd${d.talent!=="a"?' class="hl"':""}>${T[d.talent]}</dd>
         <dt>성격</dt><dd${d.pers!=="A"?' class="hl"':""}>${P[d.pers]}</dd>
       </dl>
-      <div class="cond"><h3>엔딩 조건</h3><ul>${conds}</ul></div>
+      <div class="cond"><h3>엔딩 조건${d.warn.length?`<button type="button" class="warn" data-warn="${d.no}" aria-label="주의할 엔딩 ${d.warn.length}개 보기" title="주의할 엔딩">!</button>`:""}</h3><ul>${conds}</ul></div>
       ${d.note?`<div class="note">${esc(d.note)}</div>`:""}
       <button type="button" data-no="${d.no}" aria-pressed="${isDone}">${isDone?"✓ 봤어요":"봤어요 표시"}</button>
     </article>`}).join("");
   const n=done.size;document.getElementById("pnum").textContent=n;document.getElementById("pbar").style.width=(n/71*100)+"%";
 }
+const dlg=document.getElementById("warnDlg");
+document.getElementById("wClose").onclick=()=>dlg.close();
+dlg.addEventListener("click",e=>{if(e.target===dlg)dlg.close()});
 document.getElementById("grid").addEventListener("click",e=>{
+  const w=e.target.closest("button[data-warn]");if(w){showWarn(DATA.find(d=>d.no===+w.dataset.warn));return}
   const b=e.target.closest("button[data-no]");if(!b)return;
   const no=+b.dataset.no;done.has(no)?done.delete(no):done.add(no);store.set("pp-done",[...done]);render()});
 document.getElementById("q").addEventListener("input",e=>{state.q=e.target.value;render()});
