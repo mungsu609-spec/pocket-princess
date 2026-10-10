@@ -22,19 +22,19 @@
   --bg:#fbf6f8; --surface:#ffffff; --ink:#2d1a2e; --muted:#7a6479; --line:#ead9e4;
   --plum:#7b2d6b; --plum-soft:#f3e3ee; --gold:#c08a1e; --gold-soft:#fbf0d6;
   --c-all:#7b2d6b; --c-mu:#b5442e; --c-sa:#c2527f; --c-ga:#3f7f5a; --c-ye:#3d64a8;
-  --done:#3f7f5a;
+  --done:#3f7f5a; --only:#1f6f8b;
   --f-display:"Do Hyeon","IBM Plex Sans KR",system-ui,sans-serif;
   --f-body:"IBM Plex Sans KR","Malgun Gothic",system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#1a1219; --surface:#251a24; --ink:#f3e8f0; --muted:#b39fb0; --line:#3a2b38;
   --plum:#e09ad0; --plum-soft:#3a2336; --gold:#e8b94e; --gold-soft:#3a2f1a;
-  --c-all:#d993c9; --c-mu:#ec8a74; --c-sa:#ee93b6; --c-ga:#86c79f; --c-ye:#8fb1ea; --done:#86c79f;
+  --c-all:#d993c9; --c-mu:#ec8a74; --c-sa:#ee93b6; --c-ga:#86c79f; --c-ye:#8fb1ea; --done:#86c79f; --only:#7fcbe0;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#1a1219; --surface:#251a24; --ink:#f3e8f0; --muted:#b39fb0; --line:#3a2b38;
   --plum:#e09ad0; --plum-soft:#3a2336; --gold:#e8b94e; --gold-soft:#3a2f1a;
-  --c-all:#d993c9; --c-mu:#ec8a74; --c-sa:#ee93b6; --c-ga:#86c79f; --c-ye:#8fb1ea; --done:#86c79f;
+  --c-all:#d993c9; --c-mu:#ec8a74; --c-sa:#ee93b6; --c-ga:#86c79f; --c-ye:#8fb1ea; --done:#86c79f; --only:#7fcbe0;
   color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
@@ -102,6 +102,10 @@ dialog::backdrop{background:rgba(20,8,18,.5)}
 .witem li.ruby{color:var(--c-mu)}
 .cond ul{margin:0;padding-left:18px;font-size:14px}
 .cond li.ruby{color:var(--c-mu)}
+/* 이 엔딩만 나오게 하는 추가 조건 (자동 계산) */
+.cond .only-h{list-style:none;margin:8px 0 2px -18px;padding-top:6px;border-top:1px dashed var(--only);font-size:12px;font-weight:700;color:var(--only)}
+.cond li.only{color:var(--only)}
+.cond li.only small{display:block;font-size:12px;opacity:.85}
 .note{font-size:12.5px;color:var(--muted);border-left:3px solid var(--gold);padding-left:8px}
 .card button{font:inherit;font-size:13px;align-self:flex-start;padding:6px 12px;border-radius:8px;border:1.5px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
 .card.done button{border-color:var(--done);color:var(--done);font-weight:700}
@@ -269,6 +273,47 @@ const implied=(ys,cs)=>ys.every(y=>cs.some(c=>Object.entries(c).every(([k,[l,h]]
 DATA.forEach(d=>d.req=reqOf(d));
 DATA.forEach(d=>d.warn=DATA.filter(x=>x.star>d.star&&andAll(d.req,x.req).length).sort((a,b)=>a.star-b.star||a.no-b.no));
 
+// 이 엔딩만 나오게: 주의할 엔딩을 모두 피하는 추가 조건을 고름.
+// 주의할 엔딩 조건 하나를 반대로(미만/이상) 맞추는 후보 중, 한 번에 가장 많이 피하는 것부터 차례로 고름.
+// 고른 조건끼리, 그리고 원래 조건과 동시에 맞을 수 있어야 함.
+function onlyOf(d){
+  let R=d.req,left=d.warn.slice();const picked=[];
+  const blocks=(r,c,x)=>!andAll(andAll(r,[c]),x.req).length;
+  while(left.length){
+    const cands=[];
+    left.forEach(x=>x.req.forEach(a=>Object.entries(a).forEach(([k,[l,h]])=>{
+      if(k==="명성 계열")return;
+      if(l>0)cands.push({k,r:[0,l],lt:1});
+      if(h<INF&&!(h>999&&!/알바|이벤트/.test(k)))cands.push({k,r:[h,INF],lt:0});
+    })));
+    let best=null;
+    cands.forEach(c=>{
+      const o={[c.k]:c.r};if(!andAll(R,[o]).length)return;
+      c.o=o;c.hit=left.filter(x=>blocks(R,o,x));if(!c.hit.length)return;
+      if(!best||c.hit.length>best.hit.length||c.hit.length===best.hit.length&&(c.lt>best.lt||c.lt===best.lt&&(c.lt?c.r[1]>best.r[1]:c.r[0]<best.r[0])))best=c;
+    });
+    if(!best)break;
+    R=andAll(R,[best.o]);picked.push(best);left=left.filter(x=>!best.hit.includes(x));
+  }
+  // 같은 항목·같은 방향은 가장 엄격한 것 하나로 합침
+  const m=new Map();
+  picked.forEach(c=>{const key=c.k+c.lt,p=m.get(key);
+    if(!p)m.set(key,{...c,hit:[...c.hit]});
+    else{p.r=c.lt?[0,Math.min(p.r[1],c.r[1])]:[Math.max(p.r[0],c.r[0]),INF];p.hit.push(...c.hit)}});
+  const txt=c=>{
+    if(c.k==="명성 등급")return `${d.fame} 명성 ${RANKS[c.r[1]]} 미만`;
+    const n=c.lt?c.r[1]:c.r[0],u=/알바|이벤트/.test(c.k)?"회":"";
+    if(/소유$/.test(c.k))return `${c.k}하지 않기`;
+    return `${c.k} ${n}${u} ${c.lt?"미만":"이상"}`;
+  };
+  const items=[...m.values()].map(c=>({text:txt(c),avoid:c.hit.sort((a,b)=>a.star-b.star||a.no-b.no).map(x=>x.name)}));
+  // 프리터: 다른 알바는 10회 미만 (같은 ★ 프리터끼리 겹치지 않게)
+  const f=d.conds.find(s=>/알바 10회 이상$/.test(s));
+  if(f)items.unshift({text:"다른 알바는 각각 10회 미만",avoid:["다른 알바 엔딩(프리터·하녀)"]});
+  return {items,stuck:left.map(x=>x.name)};
+}
+DATA.forEach(d=>d.only=onlyOf(d));
+
 function showWarn(d){
   document.getElementById("wTitle").innerHTML=`${esc(d.name)}<small>노릴 때 주의할 엔딩 ${d.warn.length}개</small>`;
   document.getElementById("wList").innerHTML=d.warn.map(x=>{
@@ -323,7 +368,9 @@ function render(){
   g.innerHTML=list.map(d=>{
     const isDone=done.has(d.no);
     const c=`var(${FAME_COLOR[d.fame]})`;
-    const conds=[`${d.fame} 명성 ${d.rank}`,...d.conds].map(x=>`<li>${esc(x)}</li>`).join("")+(d.ruby?`<li class="ruby">고귀한 루비 ${d.ruby}개 소모</li>`:"");
+    const o=d.only;
+    const only=o.items.length||o.stuck.length?`<li class="only-h">이 엔딩만 나오게 (더 높은 엔딩 피하기)</li>`+o.items.map(c=>`<li class="only">${esc(c.text)}<small>→ ${esc(c.avoid.join("·"))} 피함</small></li>`).join("")+(o.stuck.length?`<li class="only">${esc(o.stuck.join("·"))}: 조건이 전부 같이 맞아서 피하는 조건을 못 찾았어요</li>`:""):"";
+    const conds=[`${d.fame} 명성 ${d.rank}`,...d.conds].map(x=>`<li>${esc(x)}</li>`).join("")+(d.ruby?`<li class="ruby">고귀한 루비 ${d.ruby}개 소모</li>`:"")+only;
     return `<article class="card${isDone?" done":""}">
       <div class="top"><div><div class="no">No.${String(d.no).padStart(2,"0")} · <span class="stars" aria-label="난이도 ${d.star}">${stars(d.star)}</span></div>
       <h2 class="name">${esc(d.name)}${d.grade?`<span class="grade" title="평가">${d.grade}</span>`:""}</h2></div>
