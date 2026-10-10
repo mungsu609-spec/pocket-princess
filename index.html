@@ -120,7 +120,7 @@ dialog::backdrop{background:rgba(20,8,18,.5)}
 <div class="wrap">
   <header>
     <h1>포켓 프린세스 엔딩 도감</h1>
-    <p>직업 엔딩 71개의 난이도, 딸의 생일, 시작 나이, 재능, 성격, 엔딩 조건을 한곳에 모았어요. 달성한 엔딩은 "달성 표시"를 눌러 표시해 두세요.</p>
+    <p>직업 엔딩 71개의 난이도, 딸의 생일, 시작 나이, 재능, 성격, 엔딩 조건을 한곳에 모았어요. 달성한 엔딩은 카드 아래 "미달성"을 눌러 "✓ 달성"으로 바꿔 두세요.</p>
     <div class="progress"><div class="bar"><i id="pbar"></i></div><span>달성한 엔딩 <b id="pnum">0</b> / 71</span></div>
   </header>
 
@@ -336,7 +336,7 @@ function render(){
       </dl>
       <div class="cond"><h3>엔딩 조건${d.warn.length?`<button type="button" class="warn" data-warn="${d.no}" aria-label="주의할 엔딩 ${d.warn.length}개 보기" title="주의할 엔딩">!</button>`:""}</h3><ul>${conds}</ul></div>
       ${d.note?`<div class="note">${esc(d.note)}</div>`:""}
-      <button type="button" data-no="${d.no}" aria-pressed="${isDone}">${isDone?"✓ 달성":"달성 표시"}</button>
+      <button type="button" data-no="${d.no}" aria-pressed="${isDone}">${isDone?"✓ 달성":"미달성"}</button>
     </article>`}).join("");
   const n=done.size;document.getElementById("pnum").textContent=n;document.getElementById("pbar").style.width=(n/71*100)+"%";
 }
