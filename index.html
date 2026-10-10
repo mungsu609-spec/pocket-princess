@@ -97,6 +97,8 @@ dialog::backdrop{background:rgba(20,8,18,.5)}
 .witem .fame{font-size:11.5px;padding:1px 7px}
 .witem ul{margin:4px 0 0;padding-left:18px;font-size:14px}
 .witem li.same{opacity:.55}
+.witem.got b{color:var(--done)}
+.witem.got .got-tag{font-size:12px;font-weight:700;color:var(--done);border:1.5px solid var(--done);border-radius:6px;padding:0 6px}
 .witem li.ruby{color:var(--c-mu)}
 .cond ul{margin:0;padding-left:18px;font-size:14px}
 .cond li.ruby{color:var(--c-mu)}
@@ -118,8 +120,8 @@ dialog::backdrop{background:rgba(20,8,18,.5)}
 <div class="wrap">
   <header>
     <h1>포켓 프린세스 엔딩 도감</h1>
-    <p>직업 엔딩 71개의 난이도, 딸의 생일, 시작 나이, 재능, 성격, 엔딩 조건을 한곳에 모았어요. 본 엔딩은 "봤어요"를 눌러 표시해 두세요.</p>
-    <div class="progress"><div class="bar"><i id="pbar"></i></div><span>본 엔딩 <b id="pnum">0</b> / 71</span></div>
+    <p>직업 엔딩 71개의 난이도, 딸의 생일, 시작 나이, 재능, 성격, 엔딩 조건을 한곳에 모았어요. 달성한 엔딩은 "달성 표시"를 눌러 표시해 두세요.</p>
+    <div class="progress"><div class="bar"><i id="pbar"></i></div><span>달성한 엔딩 <b id="pnum">0</b> / 71</span></div>
   </header>
 
   <div class="controls">
@@ -273,7 +275,8 @@ function showWarn(d){
     const rows=[[`${x.fame} 명성 ${x.rank}`,fameCond(x)],...x.conds.map(s=>[s,parseCond(s)])].map(([s,cs])=>[s,implied(d.req,cs)]);
     const li=rows.map(([s,same])=>`<li${same?' class="same"':""}>${esc(s)}</li>`).join("")+(x.ruby?`<li class="ruby">고귀한 루비 ${x.ruby}개 소모</li>`:"");
     const always=rows.every(r=>r[1])?`<p class="note">${esc(d.name)} 조건을 맞추면 이 엔딩 조건도 전부 같이 맞아요${x.ruby?" (루비만 빼고)":""}.</p>`:"";
-    return `<div class="witem"><div class="wtop"><b>${esc(x.name)}</b><span class="stars" aria-label="난이도 ${x.star}">${stars(x.star)}</span><span class="fame" style="color:var(${FAME_COLOR[x.fame]})">${x.fame}</span></div><ul>${li}</ul>${always}</div>`}).join("");
+    const got=done.has(x.no);
+    return `<div class="witem${got?" got":""}"><div class="wtop"><b>${esc(x.name)}</b>${got?'<span class="got-tag">✓ 달성</span>':""}<span class="stars" aria-label="난이도 ${x.star}">${stars(x.star)}</span><span class="fame" style="color:var(${FAME_COLOR[x.fame]})">${x.fame}</span></div><ul>${li}</ul>${always}</div>`}).join("");
   const dlg=document.getElementById("warnDlg");dlg.showModal();dlg.scrollTop=0;
 }
 
@@ -293,8 +296,8 @@ for(let s=1;s<=5;s++)chip("starRow","★".repeat(s),"star",s).classList.add("sta
 chip("fameRow","전체","fame","");
 ["종합","무예","사교","가사","예술"].forEach(f=>chip("fameRow",f,"fame",f));
 chip("moreRow","전부","only","");
-chip("moreRow","안 본 엔딩","only","todo");
-chip("moreRow","본 엔딩","only","done");
+chip("moreRow","미달성","only","todo");
+chip("moreRow","달성","only","done");
 chip("moreRow","루비X","only","noruby");
 chip("moreRow","특별 재능·성격","only","special");
 
@@ -333,7 +336,7 @@ function render(){
       </dl>
       <div class="cond"><h3>엔딩 조건${d.warn.length?`<button type="button" class="warn" data-warn="${d.no}" aria-label="주의할 엔딩 ${d.warn.length}개 보기" title="주의할 엔딩">!</button>`:""}</h3><ul>${conds}</ul></div>
       ${d.note?`<div class="note">${esc(d.note)}</div>`:""}
-      <button type="button" data-no="${d.no}" aria-pressed="${isDone}">${isDone?"✓ 봤어요":"봤어요 표시"}</button>
+      <button type="button" data-no="${d.no}" aria-pressed="${isDone}">${isDone?"✓ 달성":"달성 표시"}</button>
     </article>`}).join("");
   const n=done.size;document.getElementById("pnum").textContent=n;document.getElementById("pbar").style.width=(n/71*100)+"%";
 }
