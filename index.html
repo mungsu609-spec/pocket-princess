@@ -382,7 +382,9 @@ function render(){
     if(o.has("special")&&d.talent==="a"&&d.pers==="A")return false;
     if(q){const hay=[d.name,d.grade,d.bday,d.fame,d.rank,T[d.talent],P[d.pers],...d.conds,d.ruby?"루비":"",d.note].join(" ").replace(/\s+/g,"");if(!hay.includes(q))return false}
     return true});
-  const by={star:(a,b)=>a.star-b.star||a.no-b.no,"star-d":(a,b)=>b.star-a.star||b.no-a.no,ruby:(a,b)=>a.ruby-b.ruby||a.star-b.star,name:(a,b)=>a.name.localeCompare(b.name,"ko")};
+  // 같은 ★ 안에서는 명성 등급이 낮을수록, 같은 등급이면 특정 명성(무예·사교·가사·예술)이 종합 명성보다 쉬운 것으로 봄
+  const lv=d=>RANKS.indexOf(d.rank[0])*2+(d.fame==="종합"?1:0);
+  const by={star:(a,b)=>a.star-b.star||lv(a)-lv(b)||a.no-b.no,"star-d":(a,b)=>b.star-a.star||lv(b)-lv(a)||b.no-a.no,ruby:(a,b)=>a.ruby-b.ruby||a.star-b.star||lv(a)-lv(b),name:(a,b)=>a.name.localeCompare(b.name,"ko")};
   list.sort(by[state.sort]);
   document.getElementById("count").textContent=`${list.length}개 직업`;
   const g=document.getElementById("grid");
